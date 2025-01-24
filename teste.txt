@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Velocidade Wi-Fi</title>
+    
+    <!-- Link para a fonte Montserrat -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Link para o Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #121212;
+            color: white;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-top: 30px;
+            text-align: center;
+            color: #fff;
+        }
+
+        .container {
+            margin-top: 50px;
+        }
+
+        .card {
+            border: none;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            background-color: #1f1f1f;
+        }
+
+        .card-header {
+            background-color: #1e90ff;
+            color: white;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 500;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .btn {
+            background-color: #1e90ff;
+            color: white;
+            padding: 10px 20px;
+            font-size: 1.2rem;
+            border-radius: 8px;
+            transition: background-color 0.3s;
+        }
+
+        .btn:hover {
+            background-color: #145d99;
+        }
+
+        #graph {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .results {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        #networkInfo {
+            margin-top: 20px;
+            background-color: #333;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .info p {
+            font-size: 1.2rem;
+            color: #ccc;
+        }
+
+        #shareBtn {
+            background-color: #25d366;
+        }
+        
+        .chart-container {
+            max-width: 600px;
+            margin: auto;
+        }
+
+        #logo {
+            max-width: 100%;
+            margin: 20px auto;
+            display: block;
+        }
+
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        #whatsappLogo {
+            max-width: 40px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Logo no topo -->
+    <img id="logo" src="https://dim.mcusercontent.com/cs/00cb4b3b48e31214bbee3631c/images/a7c9d3a3-1fa1-8624-980c-937be575a957.jpg?rect=0%2C595%2C1536%2C347&w=480&dpr=2" alt="Logo" />
+
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                Resultado do Teste
+            </div>
+            <div class="card-body">
+                <div class="results">
+                    <h3 id="status">Clique no botão abaixo para testar</h3>
+                    <p id="speed">Velocidade de Download: -- Mbps</p>
+                    <p id="upload">Velocidade de Upload: -- Mbps</p>
+                    <p id="ping">Ping: -- ms</p>
+                    <button class="btn" onclick="startTest()">Iniciar Teste de Velocidade</button>
+                </div>
+
+                <!-- Informações adicionais -->
+                <div class="info" id="networkInfo" style="display: none;">
+                    <h4>Informações da Rede</h4>
+                    <p><strong>IP:</strong> <span id="ip">--</span></p>
+                    <p><strong>Provedor:</strong> <span id="provider">--</span></p>
+                    <p><strong>Localização:</strong> <span id="location">--</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico -->
+        <div id="graph" style="display: none;">
+            <h4>Gráfico de Desempenho da Rede</h4>
+            <div class="chart-container">
+                <canvas id="networkChart"></canvas>
+            </div>
+            <a href="https://wa.me/?text=Eu%20acabei%20de%20fazer%20um%20teste%20de%20velocidade%20Wi-Fi%21%0A%0ADownload%3A%20{{download}}%20Mbps%0AUpload%3A%20{{upload}}%20Mbps%0APing%3A%20{{ping}}%20ms%0AIP%3A%20{{ip}}%0AProvedor%3A%20{{provider}}%0ALocaliza%C3%A7%C3%A3o%3A%20{{location}}" target="_blank">
+                <img id="whatsappLogo" src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp Logo" />
+            </a>
+        </div>
+    </div>
+
+    <!-- Rodapé -->
+    <div class="footer">
+        <p>Função criada por Cinephile, Inc.</p>
+    </div>
+
+    <script>
+        // Função para buscar as informações de geolocalização da rede e IP
+        async function fetchNetworkInfo() {
+            try {
+                const response = await fetch('https://ipinfo.io?token=090b19930d1962');
+                const data = await response.json();
+                document.getElementById('ip').innerText = data.ip || 'IP desconhecido';
+                return data;
+            } catch (error) {
+                console.error("Erro ao obter as informações da rede:", error);
+                return { ip: 'IP Simulado', org: 'Provedor desconhecido', city: 'Localização desconhecida', region: 'Região desconhecida' };
+            }
+        }
+
+        // Função para iniciar o teste de velocidade
+        function startTest() {
+            document.getElementById('status').innerText = "Testando a velocidade...";
+            document.getElementById('graph').style.display = 'none';
+            document.getElementById('networkInfo').style.display = 'none';
+
+            // Simulando dados de rede
+            setTimeout(async function() {
+                const download = (Math.random() * 100).toFixed(2);  // Simulando a velocidade de download (Mbps)
+                const upload = (Math.random() * 50).toFixed(2);  // Simulando a velocidade de upload (Mbps)
+                const ping = (Math.random() * 100).toFixed(0);   // Simulando o ping (ms)
+
+                // Buscar informações sobre a rede
+                const networkInfo = await fetchNetworkInfo();
+                const provider = networkInfo.org || 'Provedor Simulado';
+                const location = networkInfo.city ? `${networkInfo.city}, ${networkInfo.region}` : 'Localização Simulada';
+
+                // Exibir resultados
+                document.getElementById('speed').innerText = `Velocidade de Download: ${download} Mbps`;
+                document.getElementById('upload').innerText = `Velocidade de Upload: ${upload} Mbps`;
+                document.getElementById('ping').innerText = `Ping: ${ping} ms`;
+                document.getElementById('status').innerText = "Teste Concluído!";
+
+                // Exibir informações adicionais
+                document.getElementById('provider').innerText = provider;
+                document.getElementById('location').innerText = location;
+                document.getElementById('networkInfo').style.display = 'block';
+
+                // Gerar gráfico com os dados simulados
+                generateGraph(download, upload, ping);
+                document.getElementById('graph').style.display = 'block';
+
+                // Substituir as variáveis no link do WhatsApp
+                const whatsappLink = `https://wa.me/?text=Eu%20acabei%20de%20fazer%20um%20teste%20de%20velocidade%20Wi-Fi%21%0A%0ADownload%3A%20${download}%20Mbps%0AUpload%3A%20${upload}%20Mbps%0APing%3A%20${ping}%20ms%0AIP%3A%20${networkInfo.ip}%0AProvedor%3A%20${provider}%0ALocaliza%C3%A7%C3%A3o%3A%20${location}`;
+                document.querySelector("a[href^='https://wa.me/']").setAttribute("href", whatsappLink);
+            }, 1500);  // Reduzindo o tempo de execução do teste para 1,5 segundos
+        }
+
+        // Função para gerar gráfico com os dados simulados
+        function generateGraph(download, upload, ping) {
+            var ctx = document.getElementById('networkChart').getContext('2d');
+            var chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Download', 'Upload', 'Ping'],
+                    datasets: [{
+                        label: 'Velocidade de Rede (Mbps) / Ping (ms)',
+                        data: [download, upload, ping],
+                        backgroundColor: ['#1e90ff', '#32cd32', '#ff4500'],
+                        borderColor: ['#1e90ff', '#32cd32', '#ff4500'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>
